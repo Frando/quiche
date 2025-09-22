@@ -39,7 +39,7 @@ fn stream_ids(event: &Event) -> TypedArray<'_, i64> {
 
     match event {
         Event::Qlog(event) => match &event.data {
-            EventData::DataMoved(v) =>
+            EventData::StreamDataMoved(v) =>
                 if let Some(id) = v.stream_id {
                     ids.push(id as i64);
                 },
@@ -213,12 +213,11 @@ mod tests {
             qlog::events::EventData::PacketSent(qlog::events::quic::PacketSent {
                 header: pkt_hdr.clone(),
                 frames: Some(frames.into()),
-                is_coalesced: None,
-                retry_token: None,
                 stateless_reset_token: None,
                 supported_versions: None,
                 raw: Some(raw.clone()),
                 datagram_id: None,
+                is_mtu_probe_packet: None,
                 send_at_time: None,
                 trigger: None,
             });
@@ -237,12 +236,11 @@ mod tests {
             qlog::events::EventData::PacketSent(qlog::events::quic::PacketSent {
                 header: pkt_hdr.clone(),
                 frames: Some(frames.into()),
-                is_coalesced: None,
-                retry_token: None,
                 stateless_reset_token: None,
                 supported_versions: None,
                 raw: Some(raw.clone()),
                 datagram_id: None,
+                is_mtu_probe_packet: None,
                 send_at_time: None,
                 trigger: None,
             });
@@ -260,12 +258,11 @@ mod tests {
             qlog::events::EventData::PacketSent(qlog::events::quic::PacketSent {
                 header: pkt_hdr,
                 frames: Some(frames.into()),
-                is_coalesced: None,
-                retry_token: None,
                 stateless_reset_token: None,
                 supported_versions: None,
                 raw: Some(raw),
                 datagram_id: None,
+                is_mtu_probe_packet: None,
                 send_at_time: None,
                 trigger: None,
             });
