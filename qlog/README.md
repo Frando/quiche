@@ -6,9 +6,24 @@ choices to applications.
 
 The crate uses Serde for conversion between Rust and JSON.
 
-[main logging schema]: https://datatracker.ietf.org/doc/html/draft-ietf-quic-qlog-main-schema
+Standards alignment
+-------------------
+
+* The qlog data model follows the main logging schema draft-13 and QUIC event
+  definitions draft-12.
+* Multipath-specific support is derived from
+  [draft-ietf-quic-multipath-17](https://www.ietf.org/archive/id/draft-ietf-quic-multipath-17.html).
+  The crate exposes the multipath frames from that draft (`path_ack`,
+  `path_abandon`, `path_status_available`, `path_status_backup`,
+  `path_new_connection_id`, `path_retire_connection_id`, `max_path_id`,
+  `paths_blocked`, and `path_cids_blocked`) and transport parameters
+  (`enable_multipath`, `initial_path_id`, and `initial_max_path_id`) even
+  though these are not part of the qlog drafts. These are treated as
+  extensions on top of qlog draft-13 semantics.
+
+[main logging schema]: https://www.ietf.org/archive/id/draft-ietf-quic-qlog-main-schema-13.html
 [QUIC event definitions]:
-https://datatracker.ietf.org/doc/html/draft-ietf-quic-qlog-quic-events.html
+https://www.ietf.org/archive/id/draft-ietf-quic-qlog-quic-events-12.html
 [HTTP/3 and QPACK event definitions]:
 https://datatracker.ietf.org/doc/html/draft-ietf-quic-qlog-h3-events.html
 

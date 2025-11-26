@@ -34,9 +34,9 @@
 //!
 //! The crate uses Serde for conversion between Rust and JSON.
 //!
-//! [main logging schema]: https://datatracker.ietf.org/doc/html/draft-ietf-quic-qlog-main-schema
+//! [main logging schema]: https://www.ietf.org/archive/id/draft-ietf-quic-qlog-main-schema-13.html
 //! [QUIC event definitions]:
-//! https://datatracker.ietf.org/doc/html/draft-ietf-quic-qlog-quic-events.html
+//! https://www.ietf.org/archive/id/draft-ietf-quic-qlog-quic-events-12.html
 //! [HTTP/3 and QPACK event definitions]:
 //! https://datatracker.ietf.org/doc/html/draft-ietf-quic-qlog-h3-events.html
 //! [buffered mode]: #buffered-traces-with-standard-json
@@ -134,6 +134,7 @@
 //! let event_data =
 //!     qlog::events::EventData::PacketSent(qlog::events::quic::PacketSent {
 //!         header: pkt_hdr,
+//!         path_id: None,
 //!         frames: Some(frames.into()),
 //!         is_coalesced: None,
 //!         retry_token: None,
@@ -344,6 +345,7 @@
 //! let event_data =
 //!     qlog::events::EventData::PacketSent(qlog::events::quic::PacketSent {
 //!         header: pkt_hdr,
+//!         path_id: None,
 //!         frames: Some(vec![ping, padding].into()),
 //!         is_coalesced: None,
 //!         retry_token: None,
@@ -454,7 +456,7 @@ impl std::convert::From<std::io::Error> for Error {
     }
 }
 
-pub const QLOG_VERSION: &str = "0.3";
+pub const QLOG_VERSION: &str = "0.8";
 
 pub type Bytes = String;
 pub type StatelessResetToken = Bytes;

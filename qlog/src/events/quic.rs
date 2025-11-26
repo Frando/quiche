@@ -69,6 +69,8 @@ pub struct PacketHeader {
     pub packet_type: PacketType,
     pub packet_number: Option<u64>,
 
+    pub path_id: Option<u64>,
+
     pub flags: Option<u8>,
     pub token: Option<Token>,
 
@@ -113,6 +115,7 @@ impl PacketHeader {
         PacketHeader {
             packet_type,
             packet_number,
+            path_id: None,
             flags,
             token,
             length,
@@ -156,6 +159,12 @@ impl PacketHeader {
                 dcid,
             ),
         }
+    }
+
+    /// Sets the path identifier used for multipath connections.
+    pub fn with_path_id(mut self, path_id: Option<u64>) -> Self {
+        self.path_id = path_id;
+        self
     }
 }
 
@@ -369,6 +378,15 @@ pub enum QuicFrameTypeName {
     RetireConnectionId,
     PathChallenge,
     PathResponse,
+    PathAck,
+    PathAbandon,
+    PathStatusAvailable,
+    PathStatusBackup,
+    PathNewConnectionId,
+    PathRetireConnectionId,
+    MaxPathId,
+    PathsBlocked,
+    PathCidsBlocked,
     ConnectionClose,
     ApplicationClose,
     HandshakeDone,
@@ -397,6 +415,19 @@ pub enum QuicFrame {
     },
 
     Ack {
+        ack_delay: Option<f32>,
+        acked_ranges: Option<AckedRanges>,
+
+        ect1: Option<u64>,
+        ect0: Option<u64>,
+        ce: Option<u64>,
+
+        length: Option<u32>,
+        payload_length: Option<u32>,
+    },
+
+    PathAck {
+        path_id: u64,
         ack_delay: Option<f32>,
         acked_ranges: Option<AckedRanges>,
 
@@ -491,6 +522,48 @@ pub enum QuicFrame {
         data: Option<Bytes>,
     },
 
+    PathAbandon {
+        path_id: u64,
+        error_code: u64,
+    },
+
+    PathStatusAvailable {
+        path_id: u64,
+        path_status_sequence_number: u64,
+    },
+
+    PathStatusBackup {
+        path_id: u64,
+        path_status_sequence_number: u64,
+    },
+
+    PathNewConnectionId {
+        path_id: u64,
+        sequence_number: u64,
+        retire_prior_to: u64,
+        connection_id_length: Option<u8>,
+        connection_id: Bytes,
+        stateless_reset_token: Option<StatelessResetToken>,
+    },
+
+    PathRetireConnectionId {
+        path_id: u64,
+        sequence_number: u64,
+    },
+
+    MaxPathId {
+        maximum_path_id: u64,
+    },
+
+    PathsBlocked {
+        maximum_path_id: u64,
+    },
+
+    PathCidsBlocked {
+        path_id: u64,
+        next_sequence_number: u64,
+    },
+
     ConnectionClose {
         error_space: Option<ErrorSpace>,
         error_code: Option<u64>,
@@ -565,6 +638,10 @@ pub struct TransportParametersSet {
     pub max_ack_delay: Option<u16>,
     pub active_connection_id_limit: Option<u32>,
 
+    pub enable_multipath: Option<bool>,
+    pub initial_path_id: Option<u64>,
+    pub initial_max_path_id: Option<u64>,
+
     pub initial_max_data: Option<u64>,
     pub initial_max_stream_data_bidi_local: Option<u64>,
     pub initial_max_stream_data_bidi_remote: Option<u64>,
@@ -591,6 +668,10 @@ pub struct TransportParametersRestored {
     pub max_idle_timeout: Option<u64>,
     pub max_udp_payload_size: Option<u32>,
     pub active_connection_id_limit: Option<u32>,
+
+    pub enable_multipath: Option<bool>,
+    pub initial_path_id: Option<u64>,
+    pub initial_max_path_id: Option<u64>,
 
     pub initial_max_data: Option<u64>,
     pub initial_max_stream_data_bidi_local: Option<u64>,
@@ -630,6 +711,7 @@ pub struct DatagramDropped {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Default)]
 pub struct PacketReceived {
     pub header: PacketHeader,
+    pub path_id: Option<u64>,
     // `frames` is defined here in the QLog schema specification. However,
     // our streaming serializer requires serde to put the object at the end,
     // so we define it there and depend on serde's preserve_order feature.
@@ -653,6 +735,7 @@ pub struct PacketReceived {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Default)]
 pub struct PacketSent {
     pub header: PacketHeader,
+    pub path_id: Option<u64>,
     // `frames` is defined here in the QLog schema specification. However,
     // our streaming serializer requires serde to put the object at the end,
     // so we define it there and depend on serde's preserve_order feature.
@@ -678,6 +761,7 @@ pub struct PacketSent {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug, Default)]
 pub struct PacketDropped {
     pub header: Option<PacketHeader>,
+    pub path_id: Option<u64>,
 
     pub raw: Option<RawInfo>,
     pub datagram_id: Option<u32>,
@@ -691,6 +775,7 @@ pub struct PacketDropped {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug, Default)]
 pub struct PacketBuffered {
     pub header: Option<PacketHeader>,
+    pub path_id: Option<u64>,
 
     pub raw: Option<RawInfo>,
     pub datagram_id: Option<u32>,
@@ -756,6 +841,8 @@ pub struct RecoveryParametersSet {
 #[serde_with::skip_serializing_none]
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Default)]
 pub struct MetricsUpdated {
+    pub path_id: Option<u64>,
+
     pub min_rtt: Option<f32>,
     pub smoothed_rtt: Option<f32>,
     pub latest_rtt: Option<f32>,
@@ -781,6 +868,8 @@ pub struct CongestionStateUpdated {
     pub new: String,
 
     pub trigger: Option<CongestionStateUpdatedTrigger>,
+
+    pub path_id: Option<u64>,
 }
 
 #[serde_with::skip_serializing_none]
@@ -792,12 +881,15 @@ pub struct LossTimerUpdated {
     pub event_type: LossTimerEventType,
 
     pub delta: Option<f32>,
+
+    pub path_id: Option<u64>,
 }
 
 #[serde_with::skip_serializing_none]
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Default)]
 pub struct PacketLost {
     pub header: Option<PacketHeader>,
+    pub path_id: Option<u64>,
 
     pub frames: Option<Vec<QuicFrame>>,
 
@@ -808,6 +900,8 @@ pub struct PacketLost {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Default)]
 pub struct MarkedForRetransmit {
     pub frames: Vec<QuicFrame>,
+
+    pub path_id: Option<u64>,
 }
 
 #[cfg(test)]
