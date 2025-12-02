@@ -127,6 +127,7 @@
 //! let event_data =
 //!     qlog::events::EventData::PacketSent(qlog::events::quic::PacketSent {
 //!         header: pkt_hdr,
+//!         path_id: None,
 //!         frames: Some(frames.into()),
 //!         stateless_reset_token: None,
 //!         supported_versions: None,
@@ -327,6 +328,7 @@
 //! let event_data =
 //!     qlog::events::EventData::PacketSent(qlog::events::quic::PacketSent {
 //!         header: pkt_hdr,
+//!         path_id: None,
 //!         frames: Some(vec![ping, padding].into()),
 //!         stateless_reset_token: None,
 //!         supported_versions: None,

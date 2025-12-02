@@ -69,6 +69,7 @@ pub struct PacketHeader {
     pub key_phase_bit: Option<bool>,
     pub packet_number_length: Option<u8>,
     pub packet_number: Option<u64>,
+    pub path_id: Option<u64>,
 
     pub token: Option<Token>,
 
@@ -113,6 +114,7 @@ impl PacketHeader {
         PacketHeader {
             packet_type,
             packet_number,
+            path_id: None,
             token,
             length,
             version,
@@ -134,8 +136,9 @@ impl PacketHeader {
         scid: Option<&[u8]>, dcid: Option<&[u8]>,
     ) -> Self {
         match ty {
-            PacketType::OneRtt =>
-                PacketHeader::new(ty, packet_number, None, None, None, None, None),
+            PacketType::OneRtt => {
+                PacketHeader::new(ty, packet_number, None, None, None, None, None)
+            },
 
             _ => PacketHeader::new(
                 ty,
@@ -440,6 +443,15 @@ pub enum QuicFrameTypeName {
     ApplicationClose,
     HandshakeDone,
     Datagram,
+    PathAck,
+    PathAbandon,
+    PathStatusAvailable,
+    PathStatusBackup,
+    PathNewConnectionId,
+    PathRetireConnectionId,
+    MaxPathId,
+    PathsBlocked,
+    PathCidsBlocked,
     #[default]
     Unknown,
 }
@@ -583,6 +595,68 @@ pub enum QuicFrame {
         raw: Option<RawInfo>,
     },
 
+    PathAck {
+        path_id: u64,
+        ack_delay: Option<f32>,
+        acked_ranges: Option<AckedRanges>,
+
+        ect1: Option<u64>,
+        ect0: Option<u64>,
+        ce: Option<u64>,
+
+        raw: Option<RawInfo>,
+    },
+
+    PathAbandon {
+        path_id: u64,
+        error_code: u64,
+        raw: Option<RawInfo>,
+    },
+
+    PathStatusAvailable {
+        path_id: u64,
+        path_status_sequence_number: u64,
+        raw: Option<RawInfo>,
+    },
+
+    PathStatusBackup {
+        path_id: u64,
+        path_status_sequence_number: u64,
+        raw: Option<RawInfo>,
+    },
+
+    PathNewConnectionId {
+        path_id: u64,
+        sequence_number: u64,
+        retire_prior_to: u64,
+        connection_id_length: Option<u8>,
+        connection_id: Bytes,
+        stateless_reset_token: Option<StatelessResetToken>,
+        raw: Option<RawInfo>,
+    },
+
+    PathRetireConnectionId {
+        path_id: u64,
+        sequence_number: u64,
+        raw: Option<RawInfo>,
+    },
+
+    MaxPathId {
+        maximum_path_id: u64,
+        raw: Option<RawInfo>,
+    },
+
+    PathsBlocked {
+        maximum_path_id: u64,
+        raw: Option<RawInfo>,
+    },
+
+    PathCidsBlocked {
+        path_id: u64,
+        next_sequence_number: u64,
+        raw: Option<RawInfo>,
+    },
+
     Unknown {
         frame_type_bytes: Option<u64>,
         raw: Option<RawInfo>,
@@ -654,6 +728,8 @@ pub struct ParametersSet {
 
     pub preferred_address: Option<PreferredAddress>,
 
+    pub initial_max_path_id: Option<u64>,
+
     pub unknown_parameters: Vec<UnknownTransportParameter>,
 
     pub max_datagram_frame_size: Option<u64>,
@@ -684,6 +760,7 @@ pub struct ParametersRestored {
 
     pub max_datagram_frame_size: Option<u64>,
     pub grease_quic_bit: Option<bool>,
+    pub initial_max_path_id: Option<u64>,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
@@ -972,6 +1049,8 @@ pub struct RecoveryParametersSet {
 #[serde_with::skip_serializing_none]
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Default)]
 pub struct RecoveryMetricsUpdated {
+    pub path_id: Option<u64>,
+
     pub min_rtt: Option<f32>,
     pub smoothed_rtt: Option<f32>,
     pub latest_rtt: Option<f32>,
@@ -993,6 +1072,8 @@ pub struct RecoveryMetricsUpdated {
 #[serde_with::skip_serializing_none]
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug, Default)]
 pub struct CongestionStateUpdated {
+    pub path_id: Option<u64>,
+
     pub old: Option<String>,
     pub new: String,
 
@@ -1002,6 +1083,8 @@ pub struct CongestionStateUpdated {
 #[serde_with::skip_serializing_none]
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct TimerUpdated {
+    pub path_id: Option<u64>,
+
     pub timer_type: Option<TimerType>,
     pub timer_id: Option<u64>,
     pub packet_number_space: Option<PacketNumberSpace>,
