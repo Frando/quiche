@@ -265,6 +265,7 @@ fn fake_packet_header() -> PacketHeader {
     PacketHeader {
         packet_type: PacketType::OneRtt,
         packet_number: None,
+        path_id: None,
         flags: None,
         token: None,
         length: None,

@@ -176,6 +176,50 @@ pub fn frames_to_string(frames: &[QuicFrame]) -> String {
             qlog::events::quic::QuicFrame::Datagram { length, .. } => {
                s += &format!(" DATAGRAM {{len={length}}}");
             },
+            qlog::events::quic::QuicFrame::PathAck { path_id, acked_ranges, .. } => {
+                s += &format!(" PATH_ACK {{path_id={path_id}");
+                if let Some(ar) = acked_ranges {
+                    match ar {
+                        AckedRanges::Single(items) => {
+                            for a in items {
+                                for b in a {
+                                    s += &format!{", {b}, "};
+                                }
+                            }
+                        },
+                        AckedRanges::Double(items) => {
+                            for a in items {
+                                s += &format!{", {}-{}, ", a.0, a.1};
+                            }
+                        },
+                    }
+                }
+                s += "}";
+            },
+            qlog::events::quic::QuicFrame::PathAbandon{ path_id, error_code} => {
+                s += &format!(" PATH_ABANDON {{path_id={path_id}, error_code={error_code}}}");
+            },
+            qlog::events::quic::QuicFrame::PathStatusAvailable { path_id, .. } => {
+                s += &format!(" PATH_STATUS_AVAILABLE {{path_id={path_id}}}");
+            }
+            qlog::events::quic::QuicFrame::PathStatusBackup { path_id, .. } => {
+                s += &format!(" PATH_STATUS_BACKUP {{path_id={path_id}}}");
+            }
+            qlog::events::quic::QuicFrame::PathNewConnectionId { path_id, sequence_number, .. } => {
+                s += &format!(" PATH_NEW_CONNECTION_ID {{path_id={path_id}, seq={sequence_number}}}");
+            },
+            qlog::events::quic::QuicFrame::PathRetireConnectionId{ path_id, sequence_number} => {
+                s += &format!(" PATH_RETIRE_CONNECTION_ID {{path_id={path_id}, seq={sequence_number}}}");
+            },
+            qlog::events::quic::QuicFrame::MaxPathId{ maximum_path_id } => {
+                s += &format!(" MAX_PATH_ID {{maxium_path_id={maximum_path_id}}}");
+            },
+            qlog::events::quic::QuicFrame::PathsBlocked { maximum_path_id } => {
+                s += &format!(" PATHS_BLOCKED {{maxium_path_id={maximum_path_id}}}");
+            },
+            qlog::events::quic::QuicFrame::PathCidsBlocked{ path_id, next_sequence_number} => {
+                s += &format!(" PATHS_BLOCKED {{path_id={path_id}, next_sequence_number={next_sequence_number}}}");
+            },
             qlog::events::quic::QuicFrame::Unknown { raw_frame_type, .. } => {
                s += &format!(" UNKNOWN {{raw_type={raw_frame_type}}}");
             },
