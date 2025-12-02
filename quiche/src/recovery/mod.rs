@@ -342,6 +342,7 @@ impl Recovery {
                     old: None,
                     new: cc_state.to_string(),
                     trigger: None,
+                    path_id: None,
                 },
             );
 
@@ -363,13 +364,13 @@ impl Recovery {
 #[repr(C)]
 pub enum CongestionControlAlgorithm {
     /// Reno congestion control algorithm. `reno` in a string form.
-    Reno            = 0,
+    Reno = 0,
     /// CUBIC congestion control algorithm (default). `cubic` in a string form.
-    CUBIC           = 1,
+    CUBIC = 1,
     /// BBR congestion control algorithm. `bbr` in a string form.
-    BBR             = 2,
+    BBR = 2,
     /// BBRv2 congestion control algorithm. `bbr2` in a string form.
-    BBR2            = 3,
+    BBR2 = 3,
     /// BBRv2 congestion control algorithm implementation from gcongestion
     /// branch. `bbr2_gcongestion` in a string form.
     Bbr2Gcongestion = 4,
@@ -1393,7 +1394,7 @@ mod tests {
         //      | ................ | ..................... |
         //            THRESH_GAP         THRESH_GAP
         // ```
-        // 
+        //
         // Threshold gap time.
         const THRESH_GAP: Duration = Duration::from_millis(30);
         // Initial time theshold based on inital RTT.
@@ -1942,18 +1943,18 @@ mod tests {
                 let startup_pacing_gain = 2.89;
                 // Adjust for cwnd_gain.  BW estimate was made before the CWND
                 // increase.
-                let bw = r.cwnd() as f64 /
-                    cwnd_gain /
-                    Duration::from_millis(50).as_secs_f64();
+                let bw = r.cwnd() as f64
+                    / cwnd_gain
+                    / Duration::from_millis(50).as_secs_f64();
                 (bw * startup_pacing_gain) as u64
             },
             "bbr2_gcongestion" => {
                 let cwnd_gain: f64 = 2.0;
                 // Adjust for cwnd_gain.  BW estimate was made before the CWND
                 // increase.
-                let bw = r.cwnd() as f64 /
-                    cwnd_gain /
-                    Duration::from_millis(50).as_secs_f64();
+                let bw = r.cwnd() as f64
+                    / cwnd_gain
+                    / Duration::from_millis(50).as_secs_f64();
                 bw as u64
             },
             "bbr2" => {
@@ -1963,9 +1964,9 @@ mod tests {
                 let pacing_margin_percent = 0.01;
                 // Adjust for cwnd_gain.  BW estimate was made before the CWND
                 // increase.
-                let bw = r.cwnd() as f64 /
-                    cwnd_gain /
-                    Duration::from_millis(50).as_secs_f64();
+                let bw = r.cwnd() as f64
+                    / cwnd_gain
+                    / Duration::from_millis(50).as_secs_f64();
                 (bw * startup_pacing_gain * (1.0 - pacing_margin_percent)) as u64
             },
             _ => {
@@ -2325,11 +2326,14 @@ mod tests {
         assert_eq!(r.in_flight_count(packet::Epoch::Application), 0);
         assert_eq!(r.bytes_in_flight(), 0);
         assert_eq!(r.bytes_in_flight_duration(), Duration::from_micros(11250));
-        assert_eq!(r.cwnd(), match cc_algorithm_name {
-            "bbr" => 14000,
-            "bbr2" => 14000,
-            _ => 12000,
-        });
+        assert_eq!(
+            r.cwnd(),
+            match cc_algorithm_name {
+                "bbr" => 14000,
+                "bbr2" => 14000,
+                _ => 12000,
+            }
+        );
 
         assert_eq!(r.lost_count(), 0);
 
