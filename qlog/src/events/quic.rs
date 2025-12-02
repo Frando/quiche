@@ -69,6 +69,8 @@ pub struct PacketHeader {
     pub packet_type: PacketType,
     pub packet_number: Option<u64>,
 
+    pub path_id: Option<u64>,
+
     pub flags: Option<u8>,
     pub token: Option<Token>,
 
@@ -113,6 +115,7 @@ impl PacketHeader {
         PacketHeader {
             packet_type,
             packet_number,
+            path_id: None,
             flags,
             token,
             length,
@@ -156,6 +159,12 @@ impl PacketHeader {
                 dcid,
             ),
         }
+    }
+
+    /// Sets the path identifier used for multipath connections.
+    pub fn with_path_id(mut self, path_id: Option<u64>) -> Self {
+        self.path_id = path_id;
+        self
     }
 }
 
@@ -373,6 +382,15 @@ pub enum QuicFrameTypeName {
     ApplicationClose,
     HandshakeDone,
     Datagram,
+    PathAck,
+    PathAbandon,
+    PathStatusAvailable,
+    PathStatusBackup,
+    PathNewConnectionId,
+    PathRetireConnectionId,
+    MaxPathId,
+    PathsBlocked,
+    PathCidsBlocked,
     #[default]
     Unknown,
 }
@@ -508,6 +526,61 @@ pub enum QuicFrame {
         raw: Option<Bytes>,
     },
 
+    PathAck {
+        path_id: u64,
+        ack_delay: Option<f32>,
+        acked_ranges: Option<AckedRanges>,
+
+        ect1: Option<u64>,
+        ect0: Option<u64>,
+        ce: Option<u64>,
+
+        length: Option<u32>,
+        payload_length: Option<u32>,
+    },
+
+    PathAbandon {
+        path_id: u64,
+        error_code: u64,
+    },
+
+    PathStatusAvailable {
+        path_id: u64,
+        path_status_sequence_number: u64,
+    },
+
+    PathStatusBackup {
+        path_id: u64,
+        path_status_sequence_number: u64,
+    },
+
+    PathNewConnectionId {
+        path_id: u64,
+        sequence_number: u64,
+        retire_prior_to: u64,
+        connection_id_length: Option<u8>,
+        connection_id: Bytes,
+        stateless_reset_token: Option<StatelessResetToken>,
+    },
+
+    PathRetireConnectionId {
+        path_id: u64,
+        sequence_number: u64,
+    },
+
+    MaxPathId {
+        maximum_path_id: u64,
+    },
+
+    PathsBlocked {
+        maximum_path_id: u64,
+    },
+
+    PathCidsBlocked {
+        path_id: u64,
+        next_sequence_number: u64,
+    },
+
     Unknown {
         raw_frame_type: u64,
         frame_type_value: Option<u64>,
@@ -574,6 +647,8 @@ pub struct TransportParametersSet {
 
     pub preferred_address: Option<PreferredAddress>,
 
+    pub initial_max_path_id: Option<u64>,
+
     pub unknown_parameters: Vec<UnknownTransportParameter>,
 }
 
@@ -598,6 +673,8 @@ pub struct TransportParametersRestored {
     pub initial_max_stream_data_uni: Option<u64>,
     pub initial_max_streams_bidi: Option<u64>,
     pub initial_max_streams_uni: Option<u64>,
+
+    pub initial_max_path_id: Option<u64>,
 }
 
 #[serde_with::skip_serializing_none]
@@ -756,6 +833,8 @@ pub struct RecoveryParametersSet {
 #[serde_with::skip_serializing_none]
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Default)]
 pub struct MetricsUpdated {
+    pub path_id: Option<u64>,
+
     pub min_rtt: Option<f32>,
     pub smoothed_rtt: Option<f32>,
     pub latest_rtt: Option<f32>,
@@ -777,6 +856,8 @@ pub struct MetricsUpdated {
 #[serde_with::skip_serializing_none]
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug, Default)]
 pub struct CongestionStateUpdated {
+    pub path_id: Option<u64>,
+
     pub old: Option<String>,
     pub new: String,
 
@@ -786,6 +867,8 @@ pub struct CongestionStateUpdated {
 #[serde_with::skip_serializing_none]
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct LossTimerUpdated {
+    pub path_id: Option<u64>,
+
     pub timer_type: Option<TimerType>,
     pub packet_number_space: Option<PacketNumberSpace>,
 

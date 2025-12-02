@@ -134,6 +134,7 @@
 //! let event_data =
 //!     qlog::events::EventData::PacketSent(qlog::events::quic::PacketSent {
 //!         header: pkt_hdr,
+//!         path_id: None,
 //!         frames: Some(frames.into()),
 //!         is_coalesced: None,
 //!         retry_token: None,
@@ -344,6 +345,7 @@
 //! let event_data =
 //!     qlog::events::EventData::PacketSent(qlog::events::quic::PacketSent {
 //!         header: pkt_hdr,
+//!         path_id: None,
 //!         frames: Some(vec![ping, padding].into()),
 //!         is_coalesced: None,
 //!         retry_token: None,
